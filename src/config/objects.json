@@ -1,0 +1,33 @@
+{
+  "elements": {
+    "placeholder": { "x": 0, "y": 0, "z": 0, "cells": [[0]] },
+    "fence": { "x": -0.1, "y": 0, "z": 0, "cells": [[0, 0, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 0, 0]] },
+    "chicken_1": { "x": -0, "y": 0, "z": -0.2, "scale": 0.6, "cells": [[0]] },
+    "cow_1": { "x": -0.4, "y": 0, "z": -0.8, "scale": 0.8, "cells": [[0]] },
+    "sheep_1": { "x": 0, "y": 0, "z": -0.4, "scale": 1, "cells": [[0]] },
+    "ground": { "x": -0.7, "y": 0, "z": -0.9, "cells": [[2, 2], [2, 2], [2, 2]] },
+    "grape_1": { "x": -0.5, "y": 0, "z": -0.5, "cells": [[0]] },
+    "grape_2": { "x": -0.7, "y": 0, "z": -1, "cells": [[0]] },
+    "grape_3": { "x": -0.8, "y": 0, "z": -1, "cells": [[0]] },
+    "corn_1": { "x": -0.7, "y": 0, "z": -0.7, "cells": [[0]] },
+    "corn_2": { "x": -0.7, "y": 0, "z": -0.7, "cells": [[0]] },
+    "corn_3": { "x": -0.7, "y": 0, "z": -0.7, "cells": [[0]] },
+    "strawberry_1": { "x": -0.5, "y": 0, "z": -0.5, "cells": [[0]] },
+    "strawberry_2": { "x": -0.5, "y": 0, "z": -0.6, "cells": [[0]] },
+    "strawberry_3": { "x": -0.6, "y": 0, "z": -0.8, "cells": [[0]] },
+    "tomato_1": { "x": -0.7, "y": 0, "z": -0.5, "cells": [[0]] },
+    "tomato_2": { "x": -0.8, "y": 0, "z": -0.6, "cells": [[0]] },
+    "tomato_3": { "x": -1, "y": 0, "z": -0.8, "cells": [[0]] }
+  },
+  "objects": {
+    "grape": { "elements": ["grape_1", "grape_2", "grape_3"], "image": "/assets/images/grape.png", "groundType": 2 },
+    "corn": { "elements": ["corn_1", "corn_2", "corn_3"], "image": "/assets/images/corn.png", "groundType": 2 },
+    "strawberry": { "elements": ["strawberry_1", "strawberry_2", "strawberry_3"], "image": "/assets/images/strawberry.png", "groundType": 2 },
+    "tomato": { "elements": ["tomato_1", "tomato_2", "tomato_3"], "image": "/assets/images/tomato.png", "groundType": 2 },
+    "chicken": { "elements": ["chicken_1"], "image": "", "animate": "action_chicken", "groundType": 1, "rotation": "random" },
+    "cow": { "elements": ["cow_1"], "image": "/assets/images/cow.png", "animate": "idle_cow", "groundType": 1, "rotation": "random" },
+    "sheep": { "elements": ["sheep_1"], "image": "/assets/images/sheep.png", "animate": "action_sheep", "groundType": 1, "rotation": "random" },
+    "fence": { "elements": ["fence"] },
+    "ground": { "elements": ["ground"] }
+  }
+}
