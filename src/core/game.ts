@@ -5,10 +5,11 @@ import { WORLD_SCALE } from '../config/config.js';
 import { GridManager } from '../systems/grid.js';
 import { DragControls } from '../systems/controls.js';
 import { ObjectManager } from '../objects/objectManager.js';
-import { getLightingConfig } from '../systems/lighting.js';
+import { getLightingConfig, getSunPosition } from '../systems/lighting.js';
 import { Tutorial } from './tutorial.js';
 import { UILayer } from '../ui/uiLayer.js';
 import { Injector } from './injector.js';
+import { setupSceneForShadows } from '../utils/shadows.js';
 
 const TIME_SPEED = 60;
 const CAMERA_MOVE_DURATION = 0.7;
@@ -52,7 +53,7 @@ export class Game {
     const aspect = w / h;
 
     this.camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 100);
-    this.camera.position.set(8, 8, 8);
+    this.camera.position.set(15, 15, 15);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({
@@ -62,8 +63,10 @@ export class Game {
     });
     this.renderer.setSize(w, h);
     this.renderer.setClearColor(0x1a2f1a);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMapping = THREE.ReinhardToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.cameraOffset = this.camera.position.clone().sub(this.cameraTarget);
 
@@ -209,14 +212,30 @@ export class Game {
   }
 
   private setupLights(): void {
-    this.ambientLight = new THREE.AmbientLight(0x6080a0, 0.85);
+    this.ambientLight = new THREE.AmbientLight(0x6080a0, 0.4);
     this.scene.add(this.ambientLight);
-    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    this.dirLight.position.set(3, 8, 4);
+
+    this.dirLight = new THREE.DirectionalLight(0xffdd88, 1.4);
+    this.dirLight.position.set(5, 12, 6);
+    this.dirLight.target.position.set(0, 0, 0);
+    this.scene.add(this.dirLight.target);
+    this.dirLight.castShadow = true;
+    this.dirLight.shadow.mapSize.width = 2048;
+    this.dirLight.shadow.mapSize.height = 2048;
+    this.dirLight.shadow.camera.near = 0.5;
+    this.dirLight.shadow.camera.far = 50;
+    this.dirLight.shadow.camera.left = -12;
+    this.dirLight.shadow.camera.right = 12;
+    this.dirLight.shadow.camera.top = 12;
+    this.dirLight.shadow.camera.bottom = -12;
+    this.dirLight.shadow.bias = -0.0001;
+    this.dirLight.shadow.normalBias = 0.02;
     this.scene.add(this.dirLight);
-    this.hemiLight = new THREE.HemisphereLight(0xb8d4f0, 0x4a6040, 0.9);
+
+    this.hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x3d5c3d, 0.7);
     this.scene.add(this.hemiLight);
-    this.pointLight = new THREE.PointLight(0xffffff, 0.6, 30, 1.2);
+
+    this.pointLight = new THREE.PointLight(0xffffff, 0.4, 30, 1.2);
     this.pointLight.position.set(2, 5, 2);
     this.scene.add(this.pointLight);
     this.applyLighting(new Date(this.gameTimeMs).getHours());
@@ -227,6 +246,7 @@ export class Game {
     const lighting = getLightingConfig(hour);
     this.ambientLight.intensity = lighting.ambientIntensity;
     this.ambientLight.color.copy(lighting.ambientColor);
+    this.dirLight.position.copy(getSunPosition(hour));
     this.dirLight.intensity = lighting.dirIntensity;
     this.dirLight.color.copy(lighting.dirColor);
     this.hemiLight.intensity = lighting.hemiIntensity;
@@ -247,6 +267,7 @@ export class Game {
       ground.scene.position.sub(center);
       ground.scene.position.y -= box.min.y - 1.5;
       ground.scene.position.x = 0;
+      setupSceneForShadows(ground.scene);
       this.scene.add(ground.scene);
     });
   }

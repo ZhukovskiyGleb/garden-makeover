@@ -6,9 +6,9 @@ const gridData: number[][] = gridDefaultData.map(row => [...row]);
 
 export class GridManager {
   private tiles: (THREE.Mesh | null)[][] = [];
-  private darkCell = new THREE.MeshBasicMaterial({ color: 0x1a3a1a, transparent: true, opacity: 0.4 });
-  private lightCell = new THREE.MeshBasicMaterial({ color: 0x2d5a2d, transparent: true, opacity: 0.4 });
-  private greyCell = new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.4 });
+  private darkCell = new THREE.MeshBasicMaterial({ color: 0x1a3a1a, transparent: true, opacity: 0.0 });
+  private lightCell = new THREE.MeshBasicMaterial({ color: 0x2d5a2d, transparent: true, opacity: 0.0 });
+  private greyCell = new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.0 });
   private blueCell = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.5 });
   private buildGroundType: number | null = null;
 
@@ -35,7 +35,7 @@ export class GridManager {
   gridToWorld(col: number, row: number): THREE.Vector3 {
     return new THREE.Vector3(
       -GRID_HALF + GRID_CELL_SIZE * col + GRID_CELL_SIZE / 2 + GRID_OFFSET,
-      0,
+      0.0,
       -GRID_HALF + GRID_CELL_SIZE * row + GRID_CELL_SIZE / 2 + GRID_OFFSET,
     );
   }

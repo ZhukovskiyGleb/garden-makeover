@@ -3,6 +3,7 @@ import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.j
 import objectsConfig from '../config/objects.json';
 import { GRID_DIVISIONS } from '../config/config.js';
 import { Injector } from '../core/injector.js';
+import { ensureShadowMaterial } from '../utils/shadows.js';
 import { TimerBadge } from '../ui/elements/timerBadge.js';
 
 type ObjectKey = keyof typeof objectsConfig.objects;
@@ -59,6 +60,16 @@ export class GameObject {
     }
 
     const mesh = skeletonClone(original);
+    mesh.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        const mat = obj.material;
+        obj.material = Array.isArray(mat)
+          ? mat.map((m) => ensureShadowMaterial(m))
+          : ensureShadowMaterial(mat);
+      }
+    });
     const worldPos = Injector.grid.gridToWorld(col, row);
     const box = new THREE.Box3().setFromObject(mesh);
     const size = new THREE.Vector3();
@@ -126,10 +137,11 @@ export class GameObject {
 
   private updateBadgePosition(): void {
     if (!this.timerBadge || !Injector.ui?.ready || !Injector.renderer || !Injector.camera) return;
-    const box = new THREE.Box3().setFromObject(this.mesh);
-    const pos = box.getCenter(new THREE.Vector3());
-    pos.y = box.max.y - 1;
-    this.timerBadge.updatePosition(pos, Injector.camera, Injector.renderer, Injector.ui);
+    const col = Math.round(this.gridPos.x);
+    const row = Math.round(this.gridPos.y);
+    const cellCenter = Injector.grid.gridToWorld(col, row);
+    cellCenter.y = -0.2;
+    this.timerBadge.updatePosition(cellCenter, Injector.camera, Injector.renderer, Injector.ui);
   }
 
   update(delta: number): void {

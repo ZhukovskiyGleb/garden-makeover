@@ -1,5 +1,20 @@
 import * as THREE from 'three';
 
+const SUN_RADIUS = 18;
+const SUN_NOON_ELEVATION = 0.85;
+
+export function getSunPosition(hour: number): THREE.Vector3 {
+  const h = ((hour - 6) / 12) * Math.PI;
+  const elevation =
+    hour >= 6 && hour < 18
+      ? Math.sin(h) * SUN_NOON_ELEVATION + 0.15
+      : -0.3;
+  const x = Math.cos(h) * SUN_RADIUS * Math.cos(elevation);
+  const z = Math.sin(h) * SUN_RADIUS * Math.cos(elevation);
+  const y = Math.sin(elevation) * SUN_RADIUS;
+  return new THREE.Vector3(x, Math.max(y, 0.5), z);
+}
+
 export interface LightingConfig {
   ambientIntensity: number;
   ambientColor: THREE.Color;
@@ -27,38 +42,38 @@ export function getLightingConfig(hour: number): LightingConfig {
 
   if (hour >= 6 && hour < 8) {
     const t = (hour - 6) / 2;
-    ambientIntensity = 0.35 + t * 0.5;
-    ambientColor = new THREE.Color(0x806040).lerp(new THREE.Color(0x6080a0), t);
-    dirIntensity = 0.5 + t * 0.7;
-    dirColor = new THREE.Color(0xffdd99).lerp(new THREE.Color(0xffffff), t);
-    hemiSkyColor = new THREE.Color(0x88aacc).lerp(new THREE.Color(0xaaccff), t);
-    hemiGroundColor = new THREE.Color(0x2a4030).lerp(new THREE.Color(0x3a5040), t);
-    hemiIntensity = 0.4 + t * 0.5;
-    pointIntensity = 0.2 + t * 0.4;
-    pointColor = new THREE.Color(0xffeedd).lerp(new THREE.Color(0xffffff), t);
+    ambientIntensity = 0.35 + t * 0.35;
+    ambientColor = new THREE.Color(0x806040).lerp(new THREE.Color(0x808060), t);
+    dirIntensity = 0.5 + t * 1.0;
+    dirColor = new THREE.Color(0xffaa66).lerp(new THREE.Color(0xffdd88), t);
+    hemiSkyColor = new THREE.Color(0x88aacc).lerp(new THREE.Color(0x87ceeb), t);
+    hemiGroundColor = new THREE.Color(0x2a4030).lerp(new THREE.Color(0x3d5c3d), t);
+    hemiIntensity = 0.4 + t * 0.45;
+    pointIntensity = 0.2 + t * 0.3;
+    pointColor = new THREE.Color(0xffeedd).lerp(new THREE.Color(0xffeedd), t);
     bgColor = new THREE.Color(0x1a1a10).lerp(new THREE.Color(0x1a2f1a), t);
   } else if (hour >= 8 && hour < 17) {
-    ambientIntensity = 0.85;
-    ambientColor = new THREE.Color(0x6080a0);
-    dirIntensity = 1.2;
-    dirColor = new THREE.Color(0xffffff);
-    hemiSkyColor = new THREE.Color(0xb8d4f0);
-    hemiGroundColor = new THREE.Color(0x4a6040);
-    hemiIntensity = 0.9;
-    pointIntensity = 0.6;
-    pointColor = new THREE.Color(0xffffff);
+    ambientIntensity = 0.5;
+    ambientColor = new THREE.Color(0x808060);
+    dirIntensity = 1.5;
+    dirColor = new THREE.Color(0xffdd88);
+    hemiSkyColor = new THREE.Color(0x87ceeb);
+    hemiGroundColor = new THREE.Color(0x3d5c3d);
+    hemiIntensity = 0.75;
+    pointIntensity = 0.4;
+    pointColor = new THREE.Color(0xffeedd);
     bgColor = new THREE.Color(0x1a2f1a);
   } else if (hour >= 17 && hour < 20) {
     const t = (hour - 17) / 3;
-    ambientIntensity = 0.85 - t * 0.4;
-    ambientColor = new THREE.Color(0x6080a0).lerp(new THREE.Color(0x806050), t);
-    dirIntensity = 1.2 - t * 0.6;
-    dirColor = new THREE.Color(0xffffff).lerp(new THREE.Color(0xffaa66), t);
-    hemiSkyColor = new THREE.Color(0xb8d4f0).lerp(new THREE.Color(0xe8b080), t);
-    hemiGroundColor = new THREE.Color(0x4a6040).lerp(new THREE.Color(0x504030), t);
-    hemiIntensity = 0.9 - t * 0.4;
-    pointIntensity = 0.6 - t * 0.3;
-    pointColor = new THREE.Color(0xffffff).lerp(new THREE.Color(0xffcc99), t);
+    ambientIntensity = 0.5 - t * 0.2;
+    ambientColor = new THREE.Color(0x808060).lerp(new THREE.Color(0x806050), t);
+    dirIntensity = 1.5 - t * 0.9;
+    dirColor = new THREE.Color(0xffdd88).lerp(new THREE.Color(0xffaa66), t);
+    hemiSkyColor = new THREE.Color(0x87ceeb).lerp(new THREE.Color(0xe8b080), t);
+    hemiGroundColor = new THREE.Color(0x3d5c3d).lerp(new THREE.Color(0x504030), t);
+    hemiIntensity = 0.75 - t * 0.35;
+    pointIntensity = 0.4 - t * 0.2;
+    pointColor = new THREE.Color(0xffeedd).lerp(new THREE.Color(0xffcc99), t);
     bgColor = new THREE.Color(0x1a2f1a).lerp(new THREE.Color(0x1a1810), t);
   } else if (hour >= 20 || hour < 5) {
     ambientIntensity = 0.35;
