@@ -26,6 +26,7 @@ export class Button {
   private clickTimeout: ReturnType<typeof setTimeout> | null = null;
   private tutorialRing: Graphics | null = null;
   private tutorialHighlightActive = false;
+  private _enabled = true;
 
   constructor(uiLayer: UILayer, imagePath: string, config?: ButtonConfig) {
     this.imagePath = imagePath;
@@ -43,6 +44,7 @@ export class Button {
     this.container.eventMode = 'static';
     this.container.cursor = 'pointer';
     this.container.on('pointertap', () => {
+      if (!this._enabled) return;
       this.setClicked();
       if (this.onClickCallback) {
         this.onClickCallback();
@@ -64,13 +66,9 @@ export class Button {
       this.sprite.texture = texture;
       
       if (this.sprite.width > 0 && this.sprite.height > 0) {
-        const bounds = this.sprite.getLocalBounds();
-        this.container.hitArea = new Rectangle(
-          bounds.x,
-          bounds.y,
-          bounds.width,
-          bounds.height
-        );
+        const w = this.sprite.width;
+        const h = this.sprite.height;
+        this.container.hitArea = new Rectangle(-w / 2, -h / 2, w, h);
       }
       
       this.positionButton();
@@ -148,6 +146,13 @@ export class Button {
       color: 0xffff00,
       alpha: 0.5 + pulse * 0.3,
     });
+  }
+
+  setEnabled(enabled: boolean): void {
+    this._enabled = enabled;
+    this.container.eventMode = enabled ? 'static' : 'none';
+    this.container.cursor = enabled ? 'pointer' : 'default';
+    this.container.alpha = enabled ? 1 : 0.5;
   }
 
   setPosition(x: number, y: number): void {

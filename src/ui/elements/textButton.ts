@@ -10,6 +10,7 @@ export class TextButton extends Container {
   private radius: number;
   private w: number;
   private h: number;
+  private bgColor = 0xffffff;
 
   constructor(
     x: number,
@@ -32,7 +33,7 @@ export class TextButton extends Container {
     this.radius = Math.max(4, Math.floor(8 * scale));
     this.bg = new Graphics();
     this.bg.roundRect(0, 0, w, h, this.radius).fill({
-      color: 0xffffff,
+      color: this.bgColor,
       alpha: 0.15,
     });
     this.bg.stroke({ width: 2, color: 0xffffff, alpha: 0.3 });
@@ -42,7 +43,7 @@ export class TextButton extends Container {
       text,
       style: {
         fontFamily: 'sans-serif',
-        fontSize: Math.max(12, Math.floor(14 * scale)),
+        fontSize: Math.max(18, Math.floor(18 * scale)),
         fontWeight: 'bold',
         fill: '#ffffff',
       },
@@ -58,13 +59,20 @@ export class TextButton extends Container {
   }
 
   private setHover(hovered: boolean): void {
+    this.updateBg(hovered ? 0.25 : 0.15, hovered ? 0.4 : 0.3);
+  }
+
+  private updateBg(alpha: number, strokeAlpha: number): void {
     this.bg.clear();
-    const alpha = hovered ? 0.25 : 0.15;
-    const strokeAlpha = hovered ? 0.4 : 0.3;
     this.bg.roundRect(0, 0, this.w, this.h, this.radius).fill({
-      color: 0xffffff,
+      color: this.bgColor,
       alpha,
     });
     this.bg.stroke({ width: 2, color: 0xffffff, alpha: strokeAlpha });
+  }
+
+  setColor(color: number): void {
+    this.bgColor = color;
+    this.updateBg(0.15, 0.3);
   }
 }

@@ -41,11 +41,11 @@ export class MessagePopup {
       text,
       style: {
         fontFamily: 'sans-serif',
-        fontSize: 20,
+        fontSize: 28,
         fontWeight: '600',
         fill: '#ffffff',
         wordWrap: true,
-        wordWrapWidth: 280,
+        wordWrapWidth: 300,
         align: 'center',
       },
     });

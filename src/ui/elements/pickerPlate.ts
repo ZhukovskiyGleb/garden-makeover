@@ -1,7 +1,6 @@
 import {
   Container,
   Graphics,
-  Text,
   Sprite,
   Assets,
   Rectangle,
@@ -14,8 +13,7 @@ export class PickerPlate extends Container {
     x: number,
     y: number,
     itemSize: number,
-    onSelect: (name: string, groundType: number) => void,
-    onClose: () => void,
+    onSelect: (item: ObjectItem) => void,
   ) {
     super();
     this.x = x;
@@ -36,29 +34,11 @@ export class PickerPlate extends Container {
     const sprite = new Sprite();
     sprite.anchor.set(0.5, 0.5);
     sprite.x = itemSize / 2;
-    sprite.y = itemSize / 2 - 12 * (itemSize / 120);
-    sprite.scale.set(0.5 * (itemSize / 120));
+    sprite.y = itemSize / 2;
+    sprite.scale.set(0.6 * (itemSize / 120));
     this.addChild(sprite);
 
-    const labelSize = Math.max(10, Math.floor(14 * (itemSize / 120)));
-    const label = new Text({
-      text: item.name,
-      style: {
-        fontFamily: 'sans-serif',
-        fontSize: labelSize,
-        fontWeight: '600',
-        fill: '#ffffff',
-      },
-    });
-    label.anchor.set(0.5, 0);
-    label.x = itemSize / 2;
-    label.y = itemSize - 28 * (itemSize / 120);
-    this.addChild(label);
-
-    this.on('pointertap', () => {
-      onSelect(item.name, item.groundType);
-      onClose();
-    });
+    this.on('pointertap', () => onSelect(item));
 
     this.on('pointerenter', () => {
       bg.clear();

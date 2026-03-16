@@ -4,6 +4,9 @@ export default defineConfig({
   base: './',
   root: '.',
   publicDir: 'public',
+  server: {
+    allowedHosts: ['susan-hyperexcitable-werner.ngrok-free.dev'],
+  },
   build: {
     outDir: 'dist',
     target: 'es2020',

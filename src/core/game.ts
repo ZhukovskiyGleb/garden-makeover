@@ -12,7 +12,9 @@ import { Injector } from './injector.js';
 import { setupSceneForShadows } from '../utils/shadows.js';
 
 const TIME_SPEED = 60;
+const FAST_FORWARD_MULTIPLIER = 1000;
 const CAMERA_MOVE_DURATION = 0.7;
+const CAMERA_BASE_OFFSET = new THREE.Vector3(15, 15, 15);
 
 export class Game {
   private scene: THREE.Scene;
@@ -30,6 +32,10 @@ export class Game {
   private lastGameHour = -1;
   private gameTimeMs: number;
   private lastRealTime: number;
+  private dayCounter = 1;
+  private timerPaused = false;
+  private fastForwardActive = false;
+  private money = 150;
   private uiLayer!: UILayer;
   private dragControls!: DragControls;
   private buildModeObjectName: string | null = null;
@@ -53,7 +59,8 @@ export class Game {
     const aspect = w / h;
 
     this.camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 100);
-    this.camera.position.set(15, 15, 15);
+    this.cameraOffset = CAMERA_BASE_OFFSET.clone().multiplyScalar(this.getCameraScale(aspect));
+    this.camera.position.copy(this.cameraTarget).add(this.cameraOffset);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({
@@ -67,8 +74,6 @@ export class Game {
     this.renderer.toneMappingExposure = 1.2;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    this.cameraOffset = this.camera.position.clone().sub(this.cameraTarget);
 
     Injector.game = this;
     Injector.grid = this.gridManager;
@@ -91,7 +96,9 @@ export class Game {
       this.cameraTargetStart = null;
       this.cameraTargetDestination = null;
     });
-    this.gameTimeMs = Date.now();
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 13, 0, 0, 0);
+    this.gameTimeMs = start.getTime();
     this.lastRealTime = Date.now();
     this.setupUI();
   }
@@ -111,6 +118,7 @@ export class Game {
     this.tutorial.start();
 
     this.objectManager.placeDefaults();
+    requestAnimationFrame(() => this.resize());
   }
 
   moveCameraToGrid(col: number, row: number): void {
@@ -137,14 +145,27 @@ export class Game {
     return this.tutorial;
   }
 
+  getMoney(): number {
+    return this.money;
+  }
+
+  addMoney(amount: number): void {
+    this.money += amount;
+  }
+
   onObjectSelected(name: string, groundType: number): void {
     this.uiLayer.hideObjectPicker();
+    this.uiLayer.setButtonsEnabled(false);
     this.buildModeObjectName = name;
     this.buildModeGroundType = groundType;
     this.gridManager.enterBuildMode(groundType);
   }
 
   onObjectPickerClosed(): void {
+    this.ignoreNextCanvasClick = true;
+  }
+
+  onMessagePopupClosed(): void {
     this.ignoreNextCanvasClick = true;
   }
 
@@ -155,6 +176,31 @@ export class Game {
     this.ignoreNextCanvasClick = false;
     if (wasOnPicker || shouldIgnore) return;
 
+    const canvas = this.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    const tileMeshes = this.gridManager.getTileMeshes();
+    const hits = this.raycaster.intersectObjects(tileMeshes);
+    if (hits.length > 0) {
+      const gridPos = this.gridManager.worldToGrid(hits[0].point);
+      if (gridPos) {
+        const col = Math.round(gridPos.x);
+        const row = Math.round(gridPos.y);
+        const gameObject = this.objectManager.getObjectAtGrid(col, row);
+        if (Injector.tutorial?.getCurrentStep() === 8) {
+          Injector.tutorial.onMapClicked(col, row);
+        }
+        if (gameObject?.status === 'READY_FOR_COLLECT') {
+          const screenX = clientX - rect.left;
+          const screenY = clientY - rect.top;
+          if (gameObject.collect(screenX, screenY)) return;
+        }
+      }
+    }
+
     if (
       !this.buildModeObjectName ||
       this.buildModeGroundType === null ||
@@ -162,13 +208,6 @@ export class Game {
     ) {
       return;
     }
-    const canvas = this.renderer.domElement;
-    const rect = canvas.getBoundingClientRect();
-    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const tileMeshes = this.gridManager.getTileMeshes();
-    const hits = this.raycaster.intersectObjects(tileMeshes);
     if (hits.length === 0) return;
     const hit = hits[0];
     const gridPos = this.gridManager.worldToGrid(hit.point);
@@ -182,6 +221,7 @@ export class Game {
     this.buildModeObjectName = null;
     this.buildModeGroundType = null;
     this.gridManager.exitBuildMode();
+    this.uiLayer.setButtonsEnabled(true);
   }
 
   private updateCameraAnimation(): void {
@@ -204,11 +244,9 @@ export class Game {
   }
 
   skipTime(): void {
-    const SKIP_TIME_MS = 60 * 60 * 1000;
-    this.gameTimeMs += SKIP_TIME_MS;
-    const currentHour = new Date(this.gameTimeMs).getHours();
-    this.applyLighting(currentHour);
-    this.objectManager.update(60);
+    if (!this.timerPaused) {
+      this.fastForwardActive = true;
+    }
   }
 
   private setupLights(): void {
@@ -282,31 +320,69 @@ export class Game {
     this.objectManager.update(dt);
     this.updateCameraAnimation();
 
-    const now = Date.now();
-    const realDelta = now - this.lastRealTime;
-    this.lastRealTime = now;
-    this.gameTimeMs += realDelta * TIME_SPEED;
+    if (!this.timerPaused) {
+      const now = Date.now();
+      const realDelta = now - this.lastRealTime;
+      this.lastRealTime = now;
+      const speed = this.fastForwardActive ? TIME_SPEED * FAST_FORWARD_MULTIPLIER : TIME_SPEED;
+      this.gameTimeMs += realDelta * speed;
 
-    const currentHour = new Date(this.gameTimeMs).getHours();
-    if (currentHour !== this.lastGameHour) {
-      this.applyLighting(currentHour);
+      const currentHour = new Date(this.gameTimeMs).getHours();
+      if (currentHour !== this.lastGameHour) {
+        this.applyLighting(currentHour);
+      }
+
+      if (currentHour >= 20) {
+        this.fastForwardActive = false;
+        this.timerPaused = true;
+        this.uiLayer.showMessagePopup(
+          `Day ${this.dayCounter} finished`,
+          () => this.onDayEndPopupOk(),
+        );
+      }
     }
 
     if (this.uiLayer && this.uiLayer.ready) {
-      this.uiLayer.render(this.renderer, this.scene, this.camera, this.gameTimeMs);
+      this.uiLayer.render(this.renderer, this.scene, this.camera, this.gameTimeMs, this.dayCounter, this.money);
     } else {
       this.renderer.render(this.scene, this.camera);
     }
   }
 
+  private onDayEndPopupOk(): void {
+    this.uiLayer.hideMessagePopup();
+    this.objectManager.upgradeAllOnDayEnd();
+    this.dayCounter++;
+    const d = new Date(this.gameTimeMs);
+    d.setDate(d.getDate() + 1);
+    d.setHours(7, 0, 0, 0);
+    this.gameTimeMs = d.getTime();
+    this.lastRealTime = Date.now();
+    this.lastGameHour = 5;
+    this.applyLighting(6);
+    this.timerPaused = false;
+  }
+
+  private getCameraScale(aspect: number): number {
+    return aspect >= 1 ? 1 : 0.5 / aspect;
+  }
+
   resize(): void {
     const canvas = this.renderer.domElement;
     const parent = canvas.parentElement;
-    const w = parent ? parent.clientWidth : window.innerWidth;
-    const h = parent ? parent.clientHeight : window.innerHeight;
+    let w = parent ? parent.clientWidth : 0;
+    let h = parent ? parent.clientHeight : 0;
+    if (w <= 0 || h <= 0) {
+      w = canvas.clientWidth || window.innerWidth;
+      h = canvas.clientHeight || window.innerHeight;
+    }
     if (w <= 0 || h <= 0) return;
-    this.camera.aspect = w / h;
+    const aspect = w / h;
+    this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
+    this.cameraOffset.copy(CAMERA_BASE_OFFSET).multiplyScalar(this.getCameraScale(aspect));
+    this.camera.position.copy(this.cameraTarget).add(this.cameraOffset);
+    this.camera.lookAt(this.cameraTarget);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(w, h);
     if (this.uiLayer && this.uiLayer.ready) {

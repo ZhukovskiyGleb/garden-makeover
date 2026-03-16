@@ -50,14 +50,29 @@ export class ObjectManager {
     }
   }
 
-  skipTime(seconds: number): void {
+  upgradeAllOnDayEnd(): void {
     for (const obj of this.placed) {
-      obj.skipTime(seconds);
+      obj.upgradeToNextStage();
+    }
+    for (const obj of this.placed) {
+      obj.checkReadyForCollect();
     }
   }
 
   getPlaced(): readonly GameObject[] {
     return this.placed;
+  }
+
+  removeObject(gameObject: GameObject): void {
+    const idx = this.placed.indexOf(gameObject);
+    if (idx >= 0) this.placed.splice(idx, 1);
+  }
+
+  getObjectAtGrid(col: number, row: number): GameObject | null {
+    for (const obj of this.placed) {
+      if (obj.hasPriceOrEarn() && obj.occupiesCell(col, row)) return obj;
+    }
+    return null;
   }
 
   placeDefaults(): void {

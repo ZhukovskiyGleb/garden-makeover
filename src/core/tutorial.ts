@@ -1,9 +1,10 @@
 import { Injector } from './injector.js';
 
-export type TutorialStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type TutorialStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export class Tutorial {
   private currentStep: TutorialStep | null = null;
+  private skipDayClickCount = 0;
 
   getCurrentStep(): TutorialStep | null {
     return this.currentStep;
@@ -49,8 +50,6 @@ export class Tutorial {
     Injector.ui.highlightCellAtWorld(Injector.grid.gridToWorld(3, 5));
   }
 
-  private skipDayClickCount = 0;
-
   startStep7(): void {
     this.currentStep = 7;
     this.skipDayClickCount = 0;
@@ -59,7 +58,13 @@ export class Tutorial {
 
   startStep8(): void {
     this.currentStep = 8;
-    Injector.ui.showMessagePopup('good luck have fun', () => {
+    Injector.game.moveCameraToGrid(7, 1);
+    Injector.ui.highlightCellAtWorld(Injector.grid.gridToWorld(7, 1));
+  }
+
+  startStep9(): void {
+    this.currentStep = 9;
+    Injector.ui.showMessagePopup('Earn money by collecting objects, buy new objects and expand your farm!', () => {
       Injector.ui.hideMessagePopup();
       this.currentStep = null;
     });
@@ -73,12 +78,13 @@ export class Tutorial {
     else if (completedStep === 5) this.startStep6();
     else if (completedStep === 6) this.startStep7();
     else if (completedStep === 7) this.startStep8();
+    else if (completedStep === 8) this.startStep9();
   }
 
   onSkipTimeClicked(): void {
     if (this.currentStep === 7) {
       this.skipDayClickCount++;
-      if (this.skipDayClickCount >= 3) {
+      if (this.skipDayClickCount >= 1) {
         Injector.ui.unhighlightSkipTimeButton();
         this.currentStep = null;
         this.startNextStep(7);
@@ -107,12 +113,16 @@ export class Tutorial {
     }
   }
 
-  onMapClicked(_col: number, _row: number): void {
+  onMapClicked(col: number, row: number): void {
     if (this.currentStep === 3 || this.currentStep === 6) {
       Injector.ui.unhighlightCell();
       const step = this.currentStep;
       this.currentStep = null;
       this.startNextStep(step!);
+    } else if (this.currentStep === 8 && col === 7 && row === 1) {
+      Injector.ui.unhighlightCell();
+      this.currentStep = null;
+      this.startNextStep(8);
     }
   }
 
