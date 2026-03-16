@@ -396,7 +396,7 @@ export class ObjectPicker {
   }
 
   updateTutorialHighlight(timeMs: number): void {
-    const pulse = Math.sin(timeMs / 400) * 0.5 + 0.5;
+    const pulse = Math.sin(timeMs / 4000) * 0.5 + 0.5;
     if (this.tutorialRing) {
       this.updateTutorialRing(pulse);
     }

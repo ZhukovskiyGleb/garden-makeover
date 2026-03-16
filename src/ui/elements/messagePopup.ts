@@ -15,13 +15,17 @@ const BUTTON_HEIGHT = 36;
 
 export class MessagePopup {
   private overlay: Container | null = null;
+  private tutorialOkRing: Graphics | null = null;
+  private okBtnCenter = { x: 0, y: 0 };
+  private okBtnRadius = 0;
 
   show(
     stage: Container,
     text: string,
     screenWidth: number,
     screenHeight: number,
-    onOk: () => void,
+    onOk?: () => void,
+    highlightOkButton = false,
   ): void {
     this.hide();
 
@@ -52,7 +56,7 @@ export class MessagePopup {
     label.anchor.set(0.5, 0.5);
 
     const panelW = Math.min(320, screenWidth - SCREEN_MARGIN * 2);
-    const panelH = label.height + PANEL_PAD * 2 + BUTTON_HEIGHT + 16;
+    const panelH = label.height + PANEL_PAD * 2 + (onOk ? BUTTON_HEIGHT + 16 : PANEL_PAD);
 
     const panel = new Graphics();
     panel.roundRect(0, 0, panelW, panelH, PANEL_RADIUS).fill({
@@ -74,19 +78,43 @@ export class MessagePopup {
     label.y = panel.y + PANEL_PAD + label.height / 2;
     overlay.addChild(label);
 
-    const okBtn = new TextButton(
-      (screenWidth - BUTTON_WIDTH) / 2,
-      panel.y + panelH - PANEL_PAD - BUTTON_HEIGHT,
-      BUTTON_WIDTH,
-      BUTTON_HEIGHT,
-      'OK',
-      1,
-      onOk,
-    );
-    overlay.addChild(okBtn);
+    if (onOk) {
+      const okBtnX = (screenWidth - BUTTON_WIDTH) / 2;
+      const okBtnY = panel.y + panelH - PANEL_PAD - BUTTON_HEIGHT;
+      const okBtn = new TextButton(
+        okBtnX,
+        okBtnY,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+        'OK',
+        1,
+        onOk,
+      );
+      overlay.addChild(okBtn);
+      if (highlightOkButton) {
+        this.okBtnCenter = { x: okBtnX + BUTTON_WIDTH / 2, y: okBtnY + BUTTON_HEIGHT / 2 };
+        this.okBtnRadius = Math.max(BUTTON_WIDTH, BUTTON_HEIGHT) / 2 + 8;
+        this.tutorialOkRing = new Graphics();
+        this.tutorialOkRing.eventMode = 'none';
+        overlay.addChild(this.tutorialOkRing);
+      }
+    }
 
     stage.addChild(overlay);
     this.overlay = overlay;
+  }
+
+  updateTutorialHighlight(): void {
+    const pulse = Math.sin(Date.now() / 80) * 0.5 + 0.5;
+    if (!this.tutorialOkRing) return;
+    const r = this.okBtnRadius + pulse * 8;
+    this.tutorialOkRing.clear();
+    this.tutorialOkRing.circle(this.okBtnCenter.x, this.okBtnCenter.y, r);
+    this.tutorialOkRing.stroke({
+      width: 4,
+      color: 0xffff00,
+      alpha: 0.5 + pulse * 0.3,
+    });
   }
 
   hide(): void {
@@ -95,6 +123,7 @@ export class MessagePopup {
       this.overlay.destroy({ children: true });
     }
     this.overlay = null;
+    this.tutorialOkRing = null;
   }
 
   get isVisible(): boolean {

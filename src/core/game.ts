@@ -214,10 +214,12 @@ export class Game {
     if (!gridPos) return;
     const col = Math.round(gridPos.x);
     const row = Math.round(gridPos.y);
-    Injector.tutorial.onMapClicked(col, row);
     const cellValue = this.gridManager.getCellValue(col, row);
     if (cellValue !== this.buildModeGroundType) return;
-    this.placeObject(this.buildModeObjectName, new THREE.Vector2(col, row));
+    const objectName = this.buildModeObjectName;
+    this.placeObject(objectName, new THREE.Vector2(col, row));
+    Injector.tutorial.onObjectPlaced(objectName, col, row);
+    Injector.tutorial.onMapClicked(col, row);
     this.buildModeObjectName = null;
     this.buildModeGroundType = null;
     this.gridManager.exitBuildMode();
@@ -335,11 +337,17 @@ export class Game {
       if (currentHour >= 20) {
         this.fastForwardActive = false;
         this.timerPaused = true;
+        const highlightOk = Injector.tutorial?.getCurrentStep() === 7;
         this.uiLayer.showMessagePopup(
           `Day ${this.dayCounter} finished`,
           () => this.onDayEndPopupOk(),
+          highlightOk,
         );
       }
+    }
+
+    if (Injector.tutorial?.getCurrentStep() === 10 && this.money >= 100) {
+      Injector.tutorial.completeStep10();
     }
 
     if (this.uiLayer && this.uiLayer.ready) {
@@ -350,6 +358,9 @@ export class Game {
   }
 
   private onDayEndPopupOk(): void {
+    if (Injector.tutorial?.getCurrentStep() === 7) {
+      Injector.tutorial.onDayEndPopupOkClicked();
+    }
     this.uiLayer.hideMessagePopup();
     this.objectManager.upgradeAllOnDayEnd();
     this.dayCounter++;

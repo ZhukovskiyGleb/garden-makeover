@@ -211,11 +211,14 @@ export class UILayer {
     return this.objectPicker.isVisible;
   }
 
-  showMessagePopup(text: string, onOk: () => void): void {
-    this.messagePopup.show(this.stage, text, this.screenWidth, this.screenHeight, () => {
-      Injector.game.onMessagePopupClosed();
-      onOk();
-    });
+  showMessagePopup(text: string, onOk?: () => void, highlightOkButton = false): void {
+    this.messagePopup.show(this.stage, text, this.screenWidth, this.screenHeight, onOk
+      ? () => {
+          Injector.game.onMessagePopupClosed();
+          onOk();
+        }
+      : undefined,
+    highlightOkButton);
   }
 
   hideMessagePopup(): void {
@@ -271,6 +274,9 @@ export class UILayer {
       this.skipTimeButton.updateTutorialHighlight(gameTimeMs);
       this.objectPicker.updateTutorialHighlight(gameTimeMs);
       const step = Injector.tutorial?.getCurrentStep();
+      if (step === 7 && this.messagePopup.isVisible) {
+        this.messagePopup.updateTutorialHighlight();
+      }
       this.skipTimeButton.setEnabled(step === null || step >= 7);
       this.updateCellHighlight(camera, threeRenderer, gameTimeMs);
       if (this.objectPicker.isVisible && money !== undefined) {
@@ -326,7 +332,7 @@ export class UILayer {
       camera,
       renderer,
     );
-    const pulse = Math.sin(gameTimeMs / 400) * 0.5 + 0.5;
+    const pulse = Math.sin(gameTimeMs / 4000) * 0.5 + 0.5;
     const r = 40 + pulse * 8;
     this.cellHighlightRing.clear();
     this.cellHighlightRing.circle(screen.x, screen.y, r);
